@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+
+# 忽略output文件夹
+./output
