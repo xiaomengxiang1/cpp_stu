@@ -145,40 +145,207 @@
 // 3.一个类有且只有一个析构函数。若未显式定义，系统会自动生成默认的析构函数。
 // 4.对象生命周期结束时，C++ 编译系统系统自动调用析构函数。
 
-#include <iostream>
-using namespace std;
-class Stack {
+// #include <iostream>
+// using namespace std;
+// class Stack {
+//     public:
+//         Stack(int n = 10) {
+//             _a = (int*)malloc(sizeof(int) * n);
+//             _size = 0;
+//             _capacity = 10;
+
+//             cout << "malloc:" << _a  << endl;
+//         }
+
+//         //析构函数
+//         ~Stack() {
+//             free(_a);
+//             cout << "free:" << _a << endl;
+
+//             _a = nullptr;
+//             _size = 0;
+//             _capacity = 0;   
+//         }
+
+//     private:
+//         int* _a;
+//         int _size;
+//         int _capacity;
+// };
+// int main() {
+//     Stack st1;
+//     Stack st2;
+//     // 创建栈帧从上到下，销毁从下到上，根据栈的特性
+//     // malloc:0x7f4590
+//     // malloc:0x7f45f0
+//     // free:0x7f45f0
+//     // free:0x7f4590
+//     return 0;
+// }
+
+
+// --------------------没有显式定义时析构函数c++做了什么------------------------------
+
+// 和构造函数差不多，没有显式定义系统会自动生成默认的析构函数,
+
+// #include <iostream>
+// using namespace std;
+// class Time {
+//     public:
+//         Time(int hour = 0, int minute = 0, int second = 0) {
+//             _hour = hour;
+//             _minute = minute;
+//             _second = second;
+//         }
+
+//         ~Time() {
+//             cout << "Time()" << this << endl;
+//         }
+//     private:
+//         int _hour;
+//         int _minute;
+//         int _second;
+// };
+// class Data {
+//     public:
+//         //构造
+//         Data(int year = 0, int month = 0, int day = 0) {
+//             _year = year;
+//             _month = month;
+//             _day = day;
+//         }
+
+//     private:
+//         int _year;
+//         int _month;
+//         int _day;
+
+//         //系统对于内置类型/基本类型     int/char等等不会进行处理
+//         //对于自定义类型    调用它的构造函数初始化/以及析构函数清理资源
+//         Time _t;
+// };
+
+
+// int main() {
+//     Data d;
+//     // 生命周期结束后
+//     // Time()0x61fdfc   Data类中没有析构函数，调用了系统的析构函数
+//     return 0;
+// }
+
+// --------------------------------拷贝构造------------------------------------
+
+// 1.拷贝构造函数是构造函数的一个重载形式。
+// 2. 拷贝构造函数的参数只有一个且必须是类类型对象的引用，使用传值方式编译器直接报错，
+// 因为会引发无穷递归调用。
+
+// class Date
+// {
+// public:
+//     Date(int year = 1900, int month = 1, int day = 1)
+//     {
+//         _year = year;
+//         _month = month;
+//         _day = day;
+//     }
+//     // Date(const Date d) // 错误写法：编译报错，会引发无穷递归
+//     Date(const Date& d) // 正确写法
+//     {
+//         _year = d._year;
+//         _month = d._month;
+//         _day = d._day;
+//     }
+// private:
+//     int _year;
+//     int _month;
+//     int _day;
+// };
+// int main()
+// {
+//     Date d1;
+//     //两种写法
+//     Date d2(d1);
+//     Date d3 = d1;   //这种写法好像是在进行赋值操作，但实际上它属于初始化的范畴。
+//                     //在 C++ 里，当使用 = 对对象进行初始化时，编译器会把它解释为调用拷贝构造函数，
+//                     //而非赋值运算符
+//     return 0;
+// }
+// 会引发无穷递归的原因在于，直接传值会先将形参拷贝一份即Date d = d1;   等价于  Date d(d1),而d1还要进行拷贝
+// 使用引用就避免了这个问题，等价于Date& d = d1;
+
+
+
+// -------------------------------赋值运算符重载----------------------------------
+
+// 自定义类型不能使用运算符，通过operator可以实现运算符重载
+// 函数名字为：关键字operator后面接需要重载的运算符符号
+// 如operator==() {}  这个重载了==
+
+//这里的成员是公有的
+// class Date {
+//     public:
+//         Date(int year = 0, int month = 0, int day = 0) {
+//             _year = year;
+//             _month = month;
+//             _day = day;
+//         }
+//         int _year;
+//         int _month;
+//         int _day;
+// };
+
+// bool operator==(const Date& d1, const Date& d2) {
+//     return d1._day == d2._day
+//         && d1._month == d2._month
+//         && d1._year == d2._year;
+// }
+
+// int main() {
+//     Date d1(2025, 12, 4);
+//     Date d2(2025, 12, 4);
+//     int ret = (d1 == d2);  //相当于 operator==(d1 == d2);
+//     return 0;
+// }
+
+
+//这里的成员是私有的
+class Date {
     public:
-        Stack(int n = 10) {
-            _a = (int*)malloc(sizeof(int) * n);
-            _size = 0;
-            _capacity = 10;
-
-            cout << "malloc:" << _a  << endl;
+        Date(int year = 0, int month = 0, int day = 0) {
+            _year = year;
+            _month = month;
+            _day = day;
+        }
+        //封装进去内部      //这里相当于bool operator==(Date* this, const Date& d)
+        bool operator==(const Date& d) {
+            return d._day == _day
+                && d._month == _month
+                && d._year == _year;
         }
 
-        //析构函数
-        ~Stack() {
-            free(_a);
-            cout << "free:" << _a << endl;
+        // d1 > d2
+        //d1.operate>(d2)
+        bool operator>(const Date& d) {
+            if (_year > d._year)
+                return true;
+            else if (_year == d._year && _month > d._month)
+                return true;
+            else if (_year == d._year && _month == d._month && _day > d._day)
+                return true;
 
-            _a = nullptr;
-            _size = 0;
-            _capacity = 0;   
+            return false;
         }
-
     private:
-        int* _a;
-        int _size;
-        int _capacity;
+        int _year;
+        int _month;
+        int _day;
 };
+
+
 int main() {
-    Stack st1;
-    Stack st2;
-    // 创建栈帧从上到下，销毁从下到上，根据栈的特性
-    // malloc:0x7f4590
-    // malloc:0x7f45f0
-    // free:0x7f45f0
-    // free:0x7f4590
+    Date d1(2025, 12, 4);
+    Date d2(2025, 12, 4);
+    int ret1 = d1.operator==(d2);
+    int ret2 = d1.operator==(d2);
     return 0;
 }
