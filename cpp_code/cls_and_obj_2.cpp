@@ -281,6 +281,12 @@
 // 函数名字为：关键字operator后面接需要重载的运算符符号
 // 如operator==() {}  这个重载了==
 
+// 不能通过连接其他符号来创建新的操作符：比如operator@
+// 重载操作符必须有一个类类型参数
+// 用于内置类型的运算符，其含义不能改变，例如：内置的整型+，不 能改变其含义
+// 作为类成员函数重载时，其形参看起来比操作数数目少1，因为成员函数的第一个参数为隐藏的this
+// .* :: sizeof ?: . 注意以上5个运算符不能重载。这个经常在笔试选择题中出现。
+
 //这里的成员是公有的
 // class Date {
 //     public:
@@ -309,43 +315,78 @@
 
 
 //这里的成员是私有的
-class Date {
-    public:
-        Date(int year = 0, int month = 0, int day = 0) {
-            _year = year;
-            _month = month;
-            _day = day;
-        }
-        //封装进去内部      //这里相当于bool operator==(Date* this, const Date& d)
-        bool operator==(const Date& d) {
-            return d._day == _day
-                && d._month == _month
-                && d._year == _year;
-        }
+// class Date {
+//     public:
+//         Date(int year = 0, int month = 0, int day = 0) {
+//             _year = year;
+//             _month = month;
+//             _day = day;
+//         }
+//         //封装进去内部      //这里相当于bool operator==(Date* this, const Date& d)
+//         bool operator==(const Date& d) {
+//             return d._day == _day
+//                 && d._month == _month
+//                 && d._year == _year;
+//         }
 
-        // d1 > d2
-        //d1.operate>(d2)
-        bool operator>(const Date& d) {
-            if (_year > d._year)
-                return true;
-            else if (_year == d._year && _month > d._month)
-                return true;
-            else if (_year == d._year && _month == d._month && _day > d._day)
-                return true;
+//         // d1 > d2
+//         //d1.operate>(d2)
+//         bool operator>(const Date& d) {
+//             if (_year > d._year)
+//                 return true;
+//             else if (_year == d._year && _month > d._month)
+//                 return true;
+//             else if (_year == d._year && _month == d._month && _day > d._day)
+//                 return true;
 
-            return false;
-        }
-    private:
-        int _year;
-        int _month;
-        int _day;
-};
+//             return false;
+//         }
+//     private:
+//         int _year;
+//         int _month;
+//         int _day;
+// };
 
 
-int main() {
-    Date d1(2025, 12, 4);
-    Date d2(2025, 12, 4);
-    int ret1 = d1.operator==(d2);
-    int ret2 = d1.operator==(d2);
-    return 0;
-}
+// int main() {
+//     Date d1(2025, 12, 4);
+//     Date d2(2025, 12, 4);
+//     int ret1 = d1.operator==(d2);
+//     int ret2 = d1.operator==(d2);
+//     return 0;
+// }
+
+
+// -------------------------------日期类的实现----------------------------------
+
+// #include <iostream>
+// using namespace std;
+// class Data {
+//     public:
+//         Data(int year = 0, int month = , int day = 0) {
+//             _year = year;
+//             _month = month;
+//             _day = day;
+//         }
+
+//         void Print() {
+//             cout << _year << "-" << _month << "-" << _day << endl;
+//         }
+
+//     private:
+//         int _year;
+//         int _month;
+//         int _day;
+// };
+
+// int main() {
+//     Data d1;
+//     d1.Print();
+
+//     Data d2;
+//     d2.Print();
+
+//     Data d3;
+//     d3.Print();
+//     return 0;
+// }
