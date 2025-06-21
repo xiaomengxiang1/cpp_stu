@@ -273,6 +273,49 @@
 // 会引发无穷递归的原因在于，直接传值会先将形参拷贝一份即Date d = d1;   等价于  Date d(d1),而d1还要进行拷贝
 // 使用引用就避免了这个问题，等价于Date& d = d1;
 
+// 下面的代码没有定义拷贝构造和=的运算符重载，还能正常工作，并且功能一样，为什么呢？
+// #include <iostream>
+// using namespace std;
+// class Date {
+//     public:
+//         Date(int year = 0, int month = 0, int day = 0) {
+//             _year = year;
+//             _month = month;
+//             _day = day;
+//         }
+
+//         void Print() {
+//             cout << _year << "-" << _month << "-" << _day << endl;
+//         }
+
+//     private:
+//         int _year;
+//         int _month;
+//         int _day;
+// };
+// // 1、我们不实现时，编译器生成的默认构造函数和析构函数。
+// // 针对成员变量：内置类型就不处理，自定义类型会调这个成员对象的构造和
+// // 析构。
+// // 2、我们不实现时，编译器生成拷贝构造和 operator=，会完成按字节的值拷贝（浅拷贝）
+// // 也就是说有些类，我们是不需要去实现拷贝构造和 operator = 的，因为编译器默认生成就可以用。比如：Date 就是这样
+// int main() {
+//     Date d1(2020, 4, 11);
+//     Date d2(2020, 4, 15);
+//     d1 = d2;
+//     d1.Print();
+//     d2.Print();
+
+//     Date d3(d1);
+//     Date d4 = d1;
+//     d3.Print();
+//     d4.Print();
+//     return 0;
+// }
+
+// 不自己定义拷贝构造和 operator=  用系统生成的浅拷贝,在一些场景还是有局限性的
+// 如Stack这个类：
+// 如果将st1 拷贝给st2, 拷贝的过程中指向数组的指针地址会被直接拷贝,导致指向的是同一个数组空间
+// 释放空间的时候就会导致同一块空间释放多次,导致报错
 
 
 // -------------------------------赋值运算符重载----------------------------------
@@ -359,34 +402,230 @@
 
 // -------------------------------日期类的实现----------------------------------
 
-// #include <iostream>
-// using namespace std;
-// class Data {
-//     public:
-//         Data(int year = 0, int month = , int day = 0) {
-//             _year = year;
-//             _month = month;
-//             _day = day;
-//         }
+#include <iostream>
+using namespace std;
+class Data {
+    public:
+        int GetMonthDay(int year, int month) {
+            static int month_days[13] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+            if (month == 2 && ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)) {
+                return 29;
+            }
+            return month_days[month];
+        }
 
-//         void Print() {
-//             cout << _year << "-" << _month << "-" << _day << endl;
-//         }
+        Data(int year = 1, int month = 1, int day = 1) {
+            //注意构造函数的参数要检查一下
+            if (year >= 1 && month >= 1 && month <= 12 && day >= 1 && day <= GetMonthDay(year, month)) {
+                _year = year;
+                _month = month;
+                _day = day;
+            }
+            else {
+                cout << "illegal input" << endl;
+            }
+        }
 
-//     private:
-//         int _year;
-//         int _month;
-//         int _day;
-// };
+        Data(const Data& d) {
+            _year = d._year;
+            _month = d._month;
+            _day = d._day;
+        }
+
+        //d1 < d2
+        // d1.operator<(&d1, d2);
+        //bool operator<(Data* this, const Data& d);
+        bool operator<(const Data& d) {
+            if (_year < d._year)
+                return true;
+            else if (_year == d._year && _month < d._month)
+                return true;
+            else if (_year == d._year && _month < d._month && _day < d._day)
+                return true;
+
+            return false;
+        }
+
+        bool operator==(const Data& d) {
+            if (_year == d._year && _month == d._month && _day == d._day)
+                return true;
+            return false;
+        }
+
+        // d1 <= d2
+        // d1.operator<=(&d1, d2);
+        bool operator<=(const Data& d) {    // bool operator<=(Data* this, const Data& d)
+            return *this < d || *this == d; // 复用上面的函数实现
+        }
+
+        bool operator>(const Data& d) {
+            return !(*this <= d);   //注意小于等于取反才是大于
+        }
+
+        bool operator>=(const Data& d) {
+            return !(*this < d); 
+        }
+
+        bool operator!=(const Data& d) {
+            return !(*this == d); 
+        }
+
+        //处理i + 10逻辑和i += 10 逻辑的时候 要注意前面的i是不变的，后面的i变化了,所以要拷贝一个再返回，不要动原来的
+        Data operator+(int day) {
+            Data ret = *this;   //拷贝  也可以Data ret(*this);
+            ret._day += day;
+            while (ret._day > GetMonthDay(ret._year, ret._month)) {
+                //日期大了，月进一，年同理
+                ret._day -= GetMonthDay(ret._year, ret._month);
+                ret._month++;
+
+                if (ret._month > 12) {
+                    ret._year++;
+                    ret._month = 1;
+                }
+            }
+            return ret;
+        }
+
+        // //复用实现
+        // Data operator+(int day) {
+        //     Data ret = *this;
+        //     ret += day;
+
+        //     return ret;
+        // }
+
+
+        //如果返回值是全局的，那尽量返回引用
+        Data& operator+=(int day) {
+            if (day < 0) {
+                return *this -= -day;
+            }
+
+            _day += day;
+            while (_day > GetMonthDay(_year, _month)) {
+                //日期大了，月进一，年同理
+                _day -= GetMonthDay(_year, _month);
+                _month++;
+
+                if (_month > 12) {
+                    _year++;
+                    _month = 1;
+                }
+            }
+            return *this;
+        }
+
+        Data& operator-=(int day) {
+            if (day < 0) {
+                return *this += -day;
+            }
+
+            _day -= day;
+            while (_day <= 0) {
+                _month--;
+                if (_month == 0) {
+                    _month = 12;
+                    _year--;
+                }
+
+                _day += GetMonthDay(_year, _month);
+            }
+
+            return *this;
+        }
+
+        Data operator-(int day) {
+            Data ret = *this;
+            ret._day -= day;
+            while (ret._day <= 0) {
+                ret._month--;
+
+                if (ret._month == 0) {
+                    ret._month = 12;
+                    ret._year--;
+                }
+                ret._day += GetMonthDay(ret._year, ret._month);
+            }
+            return ret;
+        }
+
+        // //复用实现
+        // Data operator-(int day) {
+        //     Data ret = *this;
+        //     ret -= day;
+
+        //     return ret;
+        // }
+
+        //前置++        ++d1
+        Data& operator++() {
+            *this += 1; //复用上面的函数，加上一天
+
+            return *this;
+        }
+
+        //后置++        d1++
+        Data operator++(int) { //为了构成重载 加一个形参
+            Data ret = *this;
+            *this += 1;
+
+            return ret;
+        }
+        //前置--
+        Data& operator--() {
+            *this -= 1;
+
+            return *this;
+        }
+        // 后置--
+        Data& operator--(int) {
+            Data ret = *this;
+            *this -= 1;
+
+            return ret;
+        }
+
+        
+
+        void Print() {
+            cout << _year << "-" << _month << "-" << _day << endl;
+        }
+
+    private:
+        int _year;
+        int _month;
+        int _day;
+};
 
 // int main() {
-//     Data d1;
+//     Data d1(2020, 4, 11);
 //     d1.Print();
 
-//     Data d2;
+//     Data d2(2020, 2, 29);
 //     d2.Print();
 
-//     Data d3;
-//     d3.Print();
+//     //非法输入，打印随机值
+//     //Data d3(2021, 4, 31);
+//     //d3.Print();
+
+//     cout << (d1 > d2) << endl;
+//     cout << (d1 < d2) << endl;
+//     cout << (d1 == d2) << endl;
+//     cout << (d1 != d2) << endl;
+//     cout << (d1 <= d2) << endl;
+//     cout << (d1 >= d2) << endl;
+
+//     // 是否要重载一个运算符，看的是这个运算符是否对这个类的对象有意义
+//     Data d4 = d1 + 100;
+//     d4.Print();
+//     // d1 += 10;
+//     // d1 - 10;
+//     // d1 -= 10;
+//     // d1 - d1;
+//     // d1++;
+//     // d1--;
+
 //     return 0;
 // }
+
